@@ -2,13 +2,15 @@ import {v4 as uuid} from 'uuid'
 import { getConnection } from '../database.js'
 
 export const getTasks = (req, res) => {
-    res.send('Sending tasks')
+    const db = getConnection()
+    res.json(db.data.tasks)
 }
 
 export const createTask = async (req, res) => {
     const newTask = {
         id: uuid(),
-        name: req.body.name ? req.body.name : "",
+        createdAt: new Date,
+        name: req.body.name,
         description: req.body.description,
 
     }
@@ -24,17 +26,45 @@ export const createTask = async (req, res) => {
 }
 
 export const getTask = (req, res) => {
-    res.send('Sending task by id')
+    const db = getConnection()
+    const taskFound = db.data.tasks.find(task => task.id === req.params.id)
+
+    if (!taskFound) return res.sendStatus(404);
+    res.json(taskFound)
 }
 
-export const updateTask = (req, res) => {
-    res.send('Updating task')
+export const deleteTask = async (req, res) => {
+    const db = getConnection()
+    const taskFound = db.data.tasks.find(task => task.id === req.params.id)
+
+    if (!taskFound) return res.sendStatus(404);
+
+    const newTasks = db.data.tasks.filter(task => task.id !== req.params.id)
+    db.data.tasks = newTasks
+
+    await db.write()
+    res.json(taskFound)
 }
 
-export const deleteTask = (req, res) => {
-    res.send('Deleting task')
+export const updateTask = async (req, res) => {
+    const db = getConnection()
+    const taskFound = db.data.tasks.find(task => task.id === req.params.id)
+
+    if (!taskFound) return res.sendStatus(404);
+
+    taskFound.name = req.body.name;
+    taskFound.description = req.body.description;
+    taskFound.modifiedAt = new Date();
+
+    db.data.tasks.map(task => task.id === req.params.id ? taskFound : task)
+
+    await db.write()
+
+    res.json(taskFound)
 }
 
 export const count = (req, res) => {
-    res.send('Counting tasks')
+    const db = getConnection()
+    const count = db.data.tasks.length
+    res.json(count)
 }
